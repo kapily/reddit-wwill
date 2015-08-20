@@ -1,0 +1,107 @@
+# Some terminology:
+#
+# extractor: actually gets the data out of it.
+# matcher:
+# pattern:
+# pattern templates
+# feature, feature_boolean, feature_list
+
+# Regexes that can be referenced by any of the feature extractors
+# These regeexs define variables
+variables:
+  # case insensitive, match M or F followed by a / or space
+  # also matches male or female
+  # GENDER_LETTER: '(?i)(?P<gender>[MF])(?=/| )'
+  GENDER_LETTER: '(?i)(?P<gender>(?:m|f|male|female))(?=/| )'
+  GENDER: '(?i)(?P<gender>\b(?:fe)?male)'
+  # two digits not preceded or succeded by numbers
+  AGE: '(?<!\d)(?P<age>\d\d)(?!\d)'
+  # extracts two variables, height in feet and inches
+  # HEIGHT_IMPERIAL: '(?<!\d)(?P<height_ft>\d)''(?P<height_in>\d{1,2})(?!\d)'
+  HEIGHT_IMPERIAL: '(?<!\d)(?P<height_ft>\d)(?:''|’)(?P<height_in>\d{1,2})(?:"|”|)(?!\d)'
+  # the reason we end with three ''' below is because escaping a ' requires
+  # another '
+  HEIGHT_IMPERIAL_FEET_ONLY: '(?<!\d)(?P<height_ft>\d)'''
+  START_WEIGHT_ONLY: '(?P<start_weight>(?:\d+\.?\d+))'  # unlike START_WEIGHT_AND_END_WEIGHT this allows decimals
+  # TODO: add support for decimals to START_WEIGHT_AND_END_WEIGHT
+  # START_WEIGHT_AND_END_WEIGHT: '(?P<start_weight>\d+)(?: ?lbs| ?kg| ?kgs| ?lb)?(?: to | ?- ?| ?[-]*> ?)(?P<end_weight>\d+)'
+  START_WEIGHT_AND_END_WEIGHT: '(?P<start_weight>(?:\d+\.?\d+))(?: ?lbs| ?kg| ?kgs| ?lb)?(?: to | ?- ?| ?[-]*> ?)(?P<end_weight>(?:\d+\.?\d+))'
+  # the seperators are "slash", "space", "comma" for now
+  SEPERATOR: '(?: ?[/ ] ?)'
+
+feature_extractors_list:
+  imgur_images:
+    order: 0
+    locations: ['title', 'url', 'selftext']
+    pattern: 'http://(?:i.)?(imgur.com/(?!gallery)\w{2,})'
+  imgur_albums:
+    order: 1
+    locations: ['title', 'url', 'selftext']
+    pattern: 'http://(?:i.)?(imgur.com/a/\w{2,})'
+
+# Boolean features are set to True if the regex matches the text
+feature_extractors_boolean:
+  # Check for lb or lbs or pounds not surrounded by letters
+  is_imperial_weight:
+    order: 0
+    locations: ['title']
+    pattern: '(?<![a-zA-Z])(lb|lbs|pounds)(?![a-zA-Z])'
+  # Check for height in the form of 5'1 or 5 feet|ft|inches|in
+  is_imperial_height:
+    order: 1
+    locations: ['title']
+    pattern: '(?<!\d)\d''\d{1,2}(?!\d)|(?<![a-zA-Z])(feet|ft|inches|in)(?![a-zA-Z])'
+  is_metric_weight:
+    order: 2
+    locations: ['title']
+    pattern: '(?i)(?<![a-zA-Z])(kg|kgs|kilos)(?![a-zA-Z])'
+  is_metric_height:
+    order: 3
+    locations: ['title']
+    pattern: '(?<![a-zA-Z])(cm)(?![a-zA-Z])'
+
+feature_extractors_single:
+  gender_age_height_imperial:
+    order: 0
+    locations: ['title']
+    pattern: '{GENDER_LETTER}{SEPERATOR}{AGE}{SEPERATOR}{HEIGHT_IMPERIAL}'
+  age_gender_height_imperial:
+    order: 1
+    locations: ['title']
+    pattern: '{AGE}{SEPERATOR}{GENDER_LETTER}{SEPERATOR}{HEIGHT_IMPERIAL}'
+  gender_age_height_imperial_feet_only:
+    order: 2
+    locations: ['title']
+    pattern: '{GENDER_LETTER}{SEPERATOR}{AGE}{SEPERATOR}{HEIGHT_IMPERIAL_FEET_ONLY}'
+  age_gender_height_imperial_feet_only:
+    order: 3
+    locations: ['title']
+    pattern: '{AGE}{SEPERATOR}{GENDER_LETTER}{SEPERATOR}{HEIGHT_IMPERIAL_FEET_ONLY}'
+  gender_age_height_imperial_weight:
+    order: 4
+    locations: ['title']
+    pattern: '{GENDER_LETTER}{SEPERATOR}{AGE}{SEPERATOR}{HEIGHT_IMPERIAL}{SEPERATOR}{START_WEIGHT_ONLY}'
+  age_gender_height_imperial_weight:
+    order: 5
+    locations: ['title']
+    pattern: '{AGE}{SEPERATOR}{GENDER_LETTER}{SEPERATOR}{HEIGHT_IMPERIAL}{SEPERATOR}{START_WEIGHT_ONLY}'
+  age_gender:
+    order: 6
+    locations: ['title']
+    pattern: '{AGE}{SEPERATOR}{GENDER_LETTER}'
+  gender_height:
+    order: 7
+    locations: ['title']
+    pattern: '{GENDER}{SEPERATOR}{HEIGHT}'
+  height:
+    order: 8
+    locations: ['title']
+    pattern: '{HEIGHT_IMPERIAL}'
+  start_weight_and_end_weight:
+    order: 9
+    locations: ['title']
+    pattern: '{START_WEIGHT_AND_END_WEIGHT}'
+  gender:
+    order: 10
+    locations: ['title']
+    pattern: '{GENDER}'
