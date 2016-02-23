@@ -20,12 +20,16 @@ FLAGS = gflags.FLAGS
 gflags.DEFINE_string('input', '', '')
 gflags.DEFINE_string('output', '', '')
 gflags.DEFINE_string('synced_csv_dict', 'imgur_album_images.csv', '')
+gflags.DEFINE_string('synced_csv_dict_image_dimensions', 'imgur_images_dimensions.csv', '')
+gflags.DEFINE_string('synced_csv_dict_image_does_not_exist', 'imgur_image_does_not_exist.csv', '')
 
 gflags.MarkFlagAsRequired('input')
 gflags.MarkFlagAsRequired('output')
 
 imgur_client = ImgurClient(IMGUR_CLIENT_ID, IMGUR_CLIENT_SECRET)
 imgur_album_images = SyncedCSVDict(FLAGS.synced_csv_dict)
+imgur_image_dimensions = SyncedCSVDict(FLAGS.synced_csv_dict_image_dimensions)
+imgur_image_does_not_exist = SyncedCSVDict(FLAGS.synced_csv_dict_image_does_not_exist)
 
 def get_string_after(substr, s):
     idx = s.find(substr) + len(substr)
@@ -77,6 +81,25 @@ def get_images_in_album(album_id):
     imgur_album_images.set_val(album_id, images_in_album_str)
     return images
 
+def get_image_width_height(image_id):
+    if imgur_image_dimensions.has_key(image_id):
+        width, height = [int(x) for x in imgur_image_dimensions.get_val(image_id).split(',')]
+    else:
+        try:
+            image = imgur_client.get_image(image_id)
+            width, height = image.width, image.height
+            width_height_string = ','.join([str(width), str(height)])
+            imgur_image_dimensions.set_val(image_id, width_height_string)
+        except ImgurClientError as e:
+            if e.status_code == 404:
+                # image does not exist, mark it as such:
+                if not imgur_image_does_not_exist.has_key(image_id):
+                    imgur_image_does_not_exist.set_val(image_id, '')
+            return 1, 1  # way to say that it does not exist for now
+
+
+    return width, height
+
 def js_bool_string(b):
     assert b == True or b == False
     if b == True:
@@ -111,10 +134,13 @@ def main(argv):
                 for idx, photo in enumerate(photos):
                     photos[idx] = image_id_from_url(photo)
 
+                # Get the width and height of the first image
+                width, height = get_image_width_height(photos[0])
+                first_image_aspect_ratio = float(width) / height
+                if imgur_image_does_not_exist.has_key(photos[0]):
+                    # No need to save it if there are no photos
+                    continue
 
-
-
-                # No need to save it if there are no photos
 
                 entry = FinalEntry(
                     processed_submission.id,
@@ -124,7 +150,8 @@ def main(argv):
                     js_bool_string(processed_submission.gender_is_female),
                     processed_submission.score,
                     processed_submission.title,
-                    ','.join(photos)
+                    ','.join(photos),
+                    round(first_image_aspect_ratio,2)
                 )
 
                 csv_writer.writerow(entry)

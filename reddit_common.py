@@ -2,7 +2,7 @@ from collections import namedtuple
 
 Submission = namedtuple('Submission', 'id title selftext url permalink score subreddit')
 ProcessedSubmission = namedtuple('ProcessedSubmission', 'complete height_in start_weight_lbs end_weight_lbs gender_is_female age imgur_images imgur_albums id title selftext url permalink score subreddit')
-FinalEntry = namedtuple('FinalEntry', 'id previous_weight_lbs current_weight_lbs height_in gender score title photos')
+FinalEntry = namedtuple('FinalEntry', 'id previous_weight_lbs current_weight_lbs height_in gender score title photos first_image_aspect_ratio')
 
 """
 def submission_fields_as_strings(s):

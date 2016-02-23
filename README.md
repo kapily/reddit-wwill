@@ -29,3 +29,9 @@ Reasons why we aren't catching more:
 
 python feature_extractor.py --input=all_subreddits-2010-05-01-to-2015-08-17.csv --output=all_subreddits_extracted_features.csv
 python generate_output.py --input=all_subreddits_extracted_features.csv --output=csv_output.csv
+
+# Optional: remove titles
+q -O -H --delimiter=, "select id,previous_weight_lbs,current_weight_lbs,height_in,gender,score,photos,first_image_aspect_ratio from csv_output.csv" > csv_output_no_title.csv
+
+
+
